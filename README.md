@@ -10,7 +10,7 @@ Hubot, out of the box, is a framework to build chat bots, modeled after GitHub's
 
 ## Requirements and Installation
 
-You will need [Node.js, NPM][tutorial], [Yeoman][yo-link] and a public server with a HTTPS domain in order to setup your Bot server and connect it to your Moxtra binders. 
+You will need [Node.js, NPM][tutorial], [Yeoman][yo-link], [Moxtra account][moxtra] and a public server with a HTTPS domain in order to setup your Bot server and connect it to your Moxtra binders. 
 PS. If you don't have the server and the HTTPS, no worries, you can get a free one from [Pivotal][pivotal]. 
 
 To install, you will first need to create a new Hubot project:
@@ -43,7 +43,7 @@ To run your server, first you have to set up some Environment Variables:
     HUBOT_MOXTRA_SECRET=your_secret
     HUBOT_MOXTRA_ENV=SANDBOX
 
-In order to get the values for those variable, first uou will need to [create a Bot][createbot] in Moxtra Platform. It will provide you the Client Secret and the Verify Token. 
+In order to get the values for those variable, first you will need to [create a Bot][createbot] in Moxtra Platform. It will provide you the Client Secret and the Verify Token. 
 You will not complete the Bot creation process until we have the server running into a HTTPS url. So, for now, just get the Client Secret and define a random Verify Token.
 
 Now you can run the following command to run your server:
