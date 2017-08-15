@@ -1,12 +1,12 @@
 ## hubot-moxtra
 
-Hubot-Moxtra is an adapter that connects your [Hubot][hubot] scripts to your [Moxtra][moxtra] team, providing you one way to have your own Chat bot.
+Hubot-Moxtra is an adapter that connects your [Hubot][hubot] scripts to your [Moxtra][moxtra] team, providing you one way to have your own [Chat bot][bot-docs].
 
 Hubot, out of the box, is a framework to build chat bots, modeled after GitHub's Campfire bot of the same name, hubot. He's pretty cool. He's extendable with scripts and can work on many different chat services. With Moxtra's adapter you can now connect your Hubot to your Moxtra's binders and create your own scripts to interact with your team inside a Moxtra Chat.
 
 [hubot]: http://hubot.github.com
 [moxtra]: http://www.moxtra.com
-
+[bot-docs]: https://developer.moxtra.com/docs/docs-bot-sdk/
 
 ## Requirements and Installation
 
