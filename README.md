@@ -39,16 +39,16 @@ Once the installation is done, you can run your server.
 
 To run your server, first you have to set up some Environment Variables:
 
-    HUBOT_MOXTRA_TOKEN=your_token
+    HUBOT_MOXTRA_CLIENTID=your_client_id
     HUBOT_MOXTRA_SECRET=your_secret
-    HUBOT_MOXTRA_ENV=SANDBOX
+    HUBOT_MOXTRA_ENV=[SANDBOX | DEVELOPMENT]
 
-In order to get the values for those variable, first you will need to [create a Bot][createbot] in Moxtra Platform. It will provide you the Client Secret and the Verify Token. 
-You will not complete the Bot creation process until we have the server running into a HTTPS url. So, for now, just get the Client Secret and define a random Verify Token.
+In order to get the values for those variable, first you will need to [create a Bot][createbot] in Moxtra Platform. It will provide you the Client ID and the Client Secret. 
+You will not complete the Bot creation process until we have the server running into a HTTPS url. So, for now, just get the Client ID and the Client Secret.
 
 Now you can run the following command to run your server:
 
-    % HUBOT_MOXTRA_TOKEN=your_token HUBOT_MOXTRA_SECRET=your_secret HUBOT_MOXTRA_ENV=SANDBOX  bin/hubot -a moxtra
+    % HUBOT_MOXTRA_CLIENTID=your_client_id HUBOT_MOXTRA_SECRET=your_secret HUBOT_MOXTRA_ENV=SANDBOX  bin/hubot -a moxtra
 
 At this point you will have the server running the default Hubot, but it's not connect to your Moxtra Binder yet.
 
@@ -94,7 +94,7 @@ If you are using [Pivotal][pivotal] you can run the following commands:
     4. Publish to CF
         % cf login -a https://api.run.pivotal.io
         % cd myhubot
-        % cf push hubot-moxtra -c "HUBOT_MOXTRA_TOKEN=your_token HUBOT_MOXTRA_SECRET=your_secret bin/hubot -a moxtra"
+        % cf push hubot-moxtra -c "HUBOT_MOXTRA_CLIENTID=your_client_id HUBOT_MOXTRA_SECRET=your_secret bin/hubot -a moxtra"
 
 Ps.: you should include HUBOT_MOXTRA_ENV=SANDBOX in the command if you [created your Bot][createbot] in the Sandbox Environment.
 
@@ -136,7 +136,7 @@ Here you can find [examples][mxexample] on how to handle Moxtra's Events:
 
     - "bot_installed"
     - "bot_uninstalled"
-    - Sending Buttons
+    - Sending text, rich messages and buttons
     - Handling Buttons Postback
     - Sending Files
 

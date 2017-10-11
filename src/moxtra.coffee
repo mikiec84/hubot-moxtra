@@ -8,52 +8,73 @@ bodyParser = require 'body-parser'
 formData = require 'form-data'
 fs = require 'fs'
 fetch = require 'node-fetch'
+crypto = require 'crypto'
+URLSafeBase64 = require 'urlsafe-base64'
 
 class MoxtraMessage extends TextMessage
-    constructor: (@user, @text, @id, @access_token, @event, @message_type) ->
+    constructor: (@user, @text, @id, @org_id, @event, @message_type) ->
         super @user, @text, @id
 
 class Moxtra extends Adapter
+  _moxtraAccessToken = {}
 
+# Constructor method
   constructor: ->
     super
     @robot.logger.info "Constructor"
     endpoint = 'https://api.moxtra.com/v1'
     
-    if !process.env.HUBOT_MOXTRA_TOKEN or !process.env.HUBOT_MOXTRA_SECRET
-        @robot.logger.error "Please set up the Environment Variables: HUBOT_MOXTRA_TOKEN and HUBOT_MOXTRA_SECRET"
+    if !process.env.HUBOT_MOXTRA_CLIENTID or !process.env.HUBOT_MOXTRA_SECRET
+        @robot.logger.error "Please set up the Environment Variables: HUBOT_MOXTRA_CLIENTID and HUBOT_MOXTRA_SECRET"
         return false
     
     if process.env.HUBOT_MOXTRA_ENV is 'SANDBOX'
         endpoint = "https://apisandbox.moxtra.com/v1"
 
+    if process.env.HUBOT_MOXTRA_ENV is 'DEVELOPMENT'
+        endpoint = "https://api.grouphour.com/v1"
+
     @moxtrabot = {
-        verify_token: process.env.HUBOT_MOXTRA_TOKEN,
+        client_id: process.env.HUBOT_MOXTRA_CLIENTID,
         client_secret: process.env.HUBOT_MOXTRA_SECRET,
         api_endpoint: endpoint
     }
-
+    
     @robot.logger.info "moxtrabot:"+JSON.stringify(@moxtrabot)
 
+# Get the "send" message from scripts
   send: (data, strings...) ->
-    @robot.logger.info "********* Send *************"
-    url = @moxtrabot.api_endpoint + "/messages"
+    url = @moxtrabot.api_endpoint + "/" + data.message.id + "/messages"
 
     body = {}
     body.message = {}
     body.message.richtext = strings[0]
 
-    @robot.logger.info "data:"+JSON.stringify(data)+" | body:"+JSON.stringify(body)
+    # @robot.logger.info "********* SEND *************"
+    # console.log "data: "+JSON.stringify(data)
+    # console.log "POST url: "+url
+    # @robot.logger.info "data:"+JSON.stringify(data)+" | body:"+JSON.stringify(body)
 
-    # check for buttons
-    if data.message.buttons
-        body.message.buttons = data.message.buttons
-         
-    # check for file or audio
-    if data.message.options
-        @uploadRequest url, body, data.message.options.file_path, data.message.options.audio_path, data.message.access_token
-    else
-        @sendRequest url, body, data.message.access_token
+    # get the access token
+    @getAccessToken @moxtrabot.client_id, data.message.org_id, (err, token) =>
+        if token
+            # check for buttons
+            if data.message.buttons
+                body.message.buttons = data.message.buttons
+
+            # set the Bot alias for the Moxtra's Bot name in the first msg send
+            # if !@robot.alias
+            #     @getBotName token.access_token, (err, name) =>
+            #         @robot.alias = name if name
+            #         console.log "BOT ALIAS SET TO: #{@robot.alias}"
+                
+            # check for file or audio
+            if data.message.options
+                @uploadRequest url, body, data.message.options.file_path, data.message.options.audio_path, token.access_token
+            else
+                @sendRequest url, body, token.access_token
+        else
+            console.error "Could not retrieve the token for client_id: #{@moxtrabot.client_id} and org_id: #{data.org_id} ERROR: #{err}"
 
   sendRequest: (url, body, access_token) ->
     @robot.http(url)
@@ -85,11 +106,12 @@ class Moxtra extends Adapter
         console.log 'Error uploading file: ${err}'
       )
 
+
+# Get the "reply" message from scripts
   reply: (envelope, strings...) ->
-    @robot.logger.info "********* Reply *************"
     return @send(envelope, "@"+envelope.user.name + " " + strings[0])
-
-
+  
+# Initialize the Adapter
   run: ->
     # self = @
     @robot.logger.info "Hutbot is running with Moxtra Adapter!"
@@ -97,43 +119,11 @@ class Moxtra extends Adapter
     @emit "connected"
     @robot.router.use bodyParser.urlencoded { extended: false }
 
-    # test http response
+    # verification message http response
     @robot.router.get '/hubot/test', (req, res) ->
         res.end 'Hi there! Your Hubot server with Moxtra Adapter is up and running!'
-
-    # bot verification
-    verify_token = @moxtrabot.verify_token
-    client_secret = @moxtrabot.client_secret
-    @robot.router.get '/hubot/webhooks', (req, res) ->
-        console.log "REQUEST:"+JSON.stringify(req.query)
-
-        if req.query['message_type'] is 'bot_verify' and req.query['verify_token'] is verify_token
-            console.log 'Verification Succeed!'
-            if req.query['callback']
-                res.status(200).jsonp(req.query['bot_challenge'])
-            else
-                res.status(200).send(req.query['bot_challenge'])
-        else 
-            if req.query['message_type'] is 'account_link'
-                account_link_token = req.query['account_link_token']
-                console.log 'Account Link Token: ' + account_link_token
-
-                try
-                    decoded = jwt.verify(account_link_token, client_secret)
-                    @emit('account_link', req, res, decoded);
-                catch error
-                    console.error 'Unable to verify account_link_token!'
-                    res.send(412)
-            else
-                console.error 'Verification Failed!'
-                if req.query['callback']
-                    res.status(200).jsonp('Error-Verification')
-                else 
-                    res.send(403)
-
-			
     
-    # gets the message from Moxtra
+    # gateway to receives the post message from Moxtra's Server
     @robot.router.post '/hubot/webhooks', (req, res) =>
         data = req.body
         message_type = data.message_type
@@ -144,23 +134,72 @@ class Moxtra extends Adapter
         res.send 200
         @message data
 
-
+# Receives the message from Moxtra's Server and send to scripts
   message: (data) ->
-    console.log "MESSAGE RECEIVED FROM MOXTRA SERVER:"+JSON.stringify(data)
+    # @robot.logger.info "********* RECEIVED *************"
+    # @robot.logger.info "data: "+JSON.stringify(data)
+
     text = ""
     if data.event.comment
-        text = data.event.comment.text
+        text = data.event.comment.text # or data.event.comment.audio
         if (!text)
             text = data.event.comment.richtext
 
     user = @robot.brain.userForId(data.event.user.id)
     user.name = data.event.user.name
     user.room = data.event.binder_id
-    msg = new MoxtraMessage(user, text, data.binder_id, data.access_token, data.event, data.message_type)
+    msg = new MoxtraMessage(user, text, data.binder_id, data.org_id, data.event, data.message_type)
 
     @robot.receive msg
+
+# Get Access token to send the message back to Moxtra's Server
+  getAccessToken: (client_id, org_id, callback) ->
+    # console.log "**** GETTING TOKEN ****"
+    timestamp = (new Date).getTime()
+    token = _moxtraAccessToken[ org_id ]
+    if token
+        if timestamp < token.expired_time
+            # console.log "Using EXISTING token. "+token.access_token
+            callback(null, token)
+            return
     
-  # Display a more friendly error message
+    buf = client_id + org_id + timestamp
+    sig = crypto.createHmac('sha256', new Buffer(@moxtrabot.client_secret)).update(buf).digest()
+    signature = URLSafeBase64.encode sig
+    url = @moxtrabot.api_endpoint + '/apps/token?client_id=' + client_id + '&org_id=' + org_id + '&timestamp=' + timestamp + '&signature=' + signature
+    
+    @robot.http(url)
+      .get() (err, response, body) ->
+        if response.statusCode isnt 200
+            callback "Token request didn't come back HTTP 200 :(", null
+        else if err
+            console.error err
+            callback err, null
+        else if body
+            org_token = JSON.parse(body)
+            org_token.expired_time = timestamp + (parseInt(org_token.expires_in) * 1000)
+            _moxtraAccessToken[ org_id ] = org_token
+            # console.log "Got NEW access_token! "+ org_token.access_token + " expired_time: " + org_token.expired_time
+            callback null, org_token
+
+
+  
+# Get the Moxtra's Bot name
+  getBotName: (access_token, callback) ->
+    url = @moxtrabot.api_endpoint + "/me?access_token=" + access_token
+    @robot.http(url).get() (err, response, body) ->
+        console.log "getBotName: "+body
+        if response.statusCode isnt 200
+            callback "Bot name request didn't come back HTTP 200 :(", null
+        else if err
+            console.error err
+            callback err, null
+        else if body
+            obj = JSON.parse(body)
+            callback null, obj.data.name
+
+
+# Display a more friendly error message
 #   @robot.router.use (err, req, res, next) ->
 #     code = err.code || 500
 #     message = err.message
