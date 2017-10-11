@@ -40,7 +40,7 @@ class Moxtra extends Adapter
         api_endpoint: endpoint
     }
     
-    @robot.logger.info "moxtrabot:"+JSON.stringify(@moxtrabot)
+    # @robot.logger.info "moxtrabot:"+JSON.stringify(@moxtrabot)
 
 # Get the "send" message from scripts
   send: (data, strings...) ->

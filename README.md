@@ -78,7 +78,7 @@ If you are using Sandbox you should inform the Environment Variables HUBOT_MOXTR
 
 Get a NodeJS server, upload your myhubot to the server and run:
 
-    % HUBOT_MOXTRA_TOKEN=your_token HUBOT_MOXTRA_SECRET=your_secret bin/hubot -a moxtra
+    % HUBOT_MOXTRA_CLIENTID=your_client_id HUBOT_MOXTRA_SECRET=your_secret bin/hubot -a moxtra
 
 If you are using [Pivotal][pivotal] you can run the following commands:
 
