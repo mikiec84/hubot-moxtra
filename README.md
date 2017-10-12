@@ -114,7 +114,11 @@ You should receive a message like this:
 
 Now that you have your server up and running you should finish the [Bot creation][createbot] process that you started earlier.
 
-You should provide in the screem your HTTPS url, give your bot some name, description, set the events you want to trigger, validate and create your bot.
+Please, go back to the [Bot creation][createbot] screen and fill out the field called "Callback URL" with your bot url plus "/hubot/webhooks" to look like this:
+
+    https://your-domain/hubot/webhooks 
+
+After that, give your bot some name, description, set the events you want to trigger and create your bot.
 
 Once your Bot is validated and created, you just need to login your Moxtra Account (Production or Sandbox) and follow the steps:
 
