@@ -10,12 +10,17 @@ fs = require 'fs'
 fetch = require 'node-fetch'
 crypto = require 'crypto'
 URLSafeBase64 = require 'urlsafe-base64'
+jwt = require 'jsonwebtoken'
+OAuth2 = require './oauth2.js'
+cookie = require 'cookie'
+require('dotenv').load()
 
 class MoxtraMessage extends TextMessage
     constructor: (@user, @text, @id, @org_id, @event, @message_type) ->
         super @user, @text, @id
 
 class Moxtra extends Adapter
+  # key: binder_id   value: access_token from Moxtra
   _moxtraAccessToken = {}
 
 # Constructor method
@@ -51,7 +56,6 @@ class Moxtra extends Adapter
     body.message.richtext = strings[0]
 
     # @robot.logger.info "********* SEND *************"
-    # console.log "data: "+JSON.stringify(data)
     # console.log "POST url: "+url
     # @robot.logger.info "data:"+JSON.stringify(data)+" | body:"+JSON.stringify(body)
 
@@ -61,12 +65,6 @@ class Moxtra extends Adapter
             # check for buttons
             if data.message.buttons
                 body.message.buttons = data.message.buttons
-
-            # set the Bot alias for the Moxtra's Bot name in the first msg send
-            # if !@robot.alias
-            #     @getBotName token.access_token, (err, name) =>
-            #         @robot.alias = name if name
-            #         console.log "BOT ALIAS SET TO: #{@robot.alias}"
                 
             # check for file or audio
             if data.message.options
@@ -118,6 +116,7 @@ class Moxtra extends Adapter
     @robot.logger.info "Once connected to binder I will respond to the name: #{@robot.name}"
     @emit "connected"
     @robot.router.use bodyParser.urlencoded { extended: false }
+    @oauth2 = new OAuth2()
 
     # verification message http response
     @robot.router.get '/hubot/test', (req, res) ->
@@ -134,13 +133,79 @@ class Moxtra extends Adapter
         res.send 200
         @message data
 
+    # gateway to receives GET message from Moxtra's Server (specific for account link)
+    @robot.router.get '/hubot/webhooks', (req, res) =>
+        # console.log "req: "+req
+        if req.query["message_type"] == "account_link"
+            # account_link
+            account_link_token = req.query['account_link_token']
+            # console.log 'Account Link Token: ' + account_link_token + ' client_secret: ' + @moxtrabot.client_secret
+
+            # obtain user_id, binder_id, client_id, & org_id
+            try
+                decoded = jwt.verify(account_link_token, @moxtrabot.client_secret)
+                # console.log JSON.stringify(decoded)  
+            catch err
+                # log error			  
+                console.error 'Unable to verify account_link_token! ' + err
+                res.send 412
+                return	
+
+            # save the user id and binder_id 
+            # in the browser cookie to associate with the token in the callback
+            res.cookie 'user_id', decoded.user_id
+            res.cookie 'binder_id', decoded.binder_id
+            res.cookie 'org_id', decoded.org_id
+            res.redirect '/hubot/oauth2/auth'
+        else
+            res.send 400
+    
+    # Redirect to the OAuth2 authorization URI
+    @robot.router.get '/hubot/oauth2/auth', (req, res, next) =>
+        @oauth2.auth(req, res, next)
+
+    # The callback URI for OAuth2 (get the code and token)
+    @robot.router.get '/hubot/oauth2/callback', (req, res) =>
+        cookies = cookie.parse(req.headers.cookie || '')
+
+        if(!cookies.user_id || !cookies.binder_id || !cookies.org_id)
+            console.error "Unable to get user_id, binder_id and org_id from Cookies!"
+            res.send 400
+        else
+            user_id = cookies.user_id
+            binder_id = cookies.binder_id
+            org_id = cookies.org_id
+
+            #getting the token from the 3rd party api
+            @oauth2.callback req, res, (err, token) =>
+                
+                # create the obj needed in scripts
+                data = {}
+                data.message_type = "account_link_success"
+                data.binder_id = binder_id
+                data.org_id = org_id
+                data.event = {}
+                data.event.binder_id = binder_id
+                data.event.user = {}
+                data.event.user.id = user_id
+                data.event.user.room = binder_id
+                data.event.user.token = token
+                data.event.comment = {}
+                data.event.comment.text = "Account link successed!"
+
+                if err
+                    data.message_type = "account_link_error"
+                    data.event.comment.text = err
+
+                @message data
+
 # Receives the message from Moxtra's Server and send to scripts
   message: (data) ->
     # @robot.logger.info "********* RECEIVED *************"
     # @robot.logger.info "data: "+JSON.stringify(data)
 
     text = ""
-    if data.event.comment
+    if data.event && data.event.comment
         text = data.event.comment.text # or data.event.comment.audio
         if (!text)
             text = data.event.comment.richtext
@@ -208,4 +273,3 @@ class Moxtra extends Adapter
 
 exports.use = (robot) ->
   new Moxtra robot
-

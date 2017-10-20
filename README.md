@@ -37,18 +37,22 @@ Once the installation is done, you can run your server.
 
 ## Running your Hubot
 
-To run your server, first you have to set up some Environment Variables:
+To run your server, first you have to set up the following Environment Variables. It can either be done using .env file or through the command line at the time you are starting the server.
 
     HUBOT_MOXTRA_CLIENTID=your_client_id
     HUBOT_MOXTRA_SECRET=your_secret
     HUBOT_MOXTRA_ENV=[SANDBOX | DEVELOPMENT]
 
 In order to get the values for those variable, first you will need to [create a Bot][createbot] in Moxtra Platform. It will provide you the Client ID and the Client Secret. 
-You will not complete the Bot creation process until we have the server running into a HTTPS url. So, for now, just get the Client ID and the Client Secret.
+You will not complete the Bot creation process until we have the server running into a HTTPS url. So, for now, just get the Client ID and the Client Secret from Moxtra Bot creation screen.
 
 Now you can run the following command to run your server:
 
     % HUBOT_MOXTRA_CLIENTID=your_client_id HUBOT_MOXTRA_SECRET=your_secret HUBOT_MOXTRA_ENV=SANDBOX  bin/hubot -a moxtra
+
+If you created the Environment Variables in the .env file you just need to run the following command:
+
+    % bin/hubot -a moxtra
 
 At this point you will have the server running the default Hubot, but it's not connect to your Moxtra Binder yet.
 
@@ -76,9 +80,13 @@ If you are using Sandbox you should inform the Environment Variables HUBOT_MOXTR
 
 ## Deploying
 
-Get a NodeJS server, upload your myhubot to the server and run:
+Get a NodeJS server, upload your hubot to the server and run:
 
     % HUBOT_MOXTRA_CLIENTID=your_client_id HUBOT_MOXTRA_SECRET=your_secret bin/hubot -a moxtra
+
+If you created the Environment Variables in the .env file you just need to run the following command:
+
+    % bin/hubot -a moxtra
 
 If you are using [Pivotal][pivotal] you can run the following commands:
 
@@ -96,7 +104,7 @@ If you are using [Pivotal][pivotal] you can run the following commands:
         % cd myhubot
         % cf push hubot-moxtra -c "HUBOT_MOXTRA_CLIENTID=your_client_id HUBOT_MOXTRA_SECRET=your_secret bin/hubot -a moxtra"
 
-Ps.: you should include HUBOT_MOXTRA_ENV=SANDBOX in the command if you [created your Bot][createbot] in the Sandbox Environment.
+Ps.: you should set the HUBOT_MOXTRA_ENV=SANDBOX environment variable if you [created your Bot][createbot] in the Sandbox Environment. For Production you don't need to specify the HUBOT_MOXTRA_ENV. The adapter will assume it is Production.
 
 [pivotal]: https://pivotal.io/
 
@@ -104,7 +112,7 @@ Ps.: you should include HUBOT_MOXTRA_ENV=SANDBOX in the command if you [created 
 
 Once your server is up and running, check if it can respond to a https request:
 
-    https://yoururl/hubot/test 
+    https://your-bot-url/hubot/test 
 
 You should receive a message like this:
 
@@ -129,6 +137,33 @@ Once your Bot is validated and created, you just need to login your Moxtra Accou
     5. Look for the Bot you created, click in it and select Install
     6. Select the Binder you created on step 1 or any other binder you want to install the Bot
 
+## Linking 3rd party accounts / OAuth2
+
+You can connect your Moxtra Hubot to Third-party apps using [OAuth2][oauth2].
+For example, you can use your Bot to bring to the chat some files from your [Dropbox][dropbox] account or any other third-party app that supports OAuth2. You just need to set up the following Environment Variables in your .env file:
+
+    HUBOT_OAUTH2_CLIENT_ID= YOUR-3RD-PARTY-CLIENT-ID
+    HUBOT_OAUTH2_CLIENT_SECRET= YOUR-3RD-PARTY-SECRECT
+    HUBOT_OAUTH2_ENDPOINT= https://third-party-uri
+    HUBOT_OAUTH2_AUTH_PATH= /oauth/authorize
+    HUBOT_OAUTH2_TOKEN_PATH= /oauth/token
+    HUBOT_OAUTH2_REDIRECT_URI= https://your-bot-url/hubot/oauth2/callback
+
+The adapter will do all the Authentication process work to get the job done for you. It will open up a windows for the user to log into their account and will send back to your scripts the JSON Token Object, like this:
+
+    {  
+        "access_token": "AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AAAV82AA",
+        "token_type": "bearer",
+        "refresh_token": "MzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIxMMzIx",
+        "expires_in": 43199,
+        "scope": "read write",
+        "expires_at": "2017-10-20T09:52:33.925Z"
+    }
+
+From there, you can call your third-party API to get the information you need direct from your Hubot Script folder.
+
+[dropbox]: https://www.dropbox.com/developers/reference/oauth-guide
+[oauth2]: https://oauth.net/2/
 
 ## Extending Hubot Capabilities
 
@@ -143,6 +178,7 @@ Here you can find [examples][mxexample] on how to handle Moxtra's Events:
     - Sending text, rich messages and buttons
     - Handling Buttons Postback
     - Sending Files
+    - Linking 3rd party accounts using OAuth2
 
     https://github.com/moxtra/moxtra-sample-hubot/tree/master/scripts/moxtra-example.coffee 
 
