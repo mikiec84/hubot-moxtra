@@ -118,7 +118,7 @@ You should receive a message like this:
 
    "Hi there! Your Hubot server with Moxtra Adapter is up and running!"
 
-## Linking you Hubot with Moxtra
+## Linking your Hubot with Moxtra
 
 Now that you have your server up and running you should finish the [Bot creation][createbot] process that you started earlier.
 
@@ -137,7 +137,7 @@ Once your Bot is validated and created, you just need to login your Moxtra Accou
     5. Look for the Bot you created, click in it and select Install
     6. Select the Binder you created on step 1 or any other binder you want to install the Bot
 
-## Linking 3rd party accounts / OAuth2
+## Linking 3rd party accounts through OAuth2
 
 You can connect your Moxtra Hubot to Third-party apps using [OAuth2][oauth2].
 For example, you can use your Bot to bring to the chat some files from your [Dropbox][dropbox] account or any other third-party app that supports OAuth2. You just need to set up the following Environment Variables in your .env file:
