@@ -1,6 +1,6 @@
 {
   "name": "hubot-moxtra",
-  "version": "2.2.5",
+  "version": "2.3.0",
   "description": "Moxtra Adapter for Hubot",
   "main": "./src/moxtra.coffee",
   "scripts": {
